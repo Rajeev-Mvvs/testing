@@ -1,0 +1,546 @@
+**Week 4 Maven Lab Action Plan**
+---
+
+**Notes:**
+
+* `target/` is created after build (`mvn clean install`).
+
+* Dependencies stored in local repo: `~/.m2/repository/groupId/artifactId/version/`.
+---
+
+## **2. Steps to Perform Maven Build and Testing**
+
+**Command:**
+
+```bash
+
+mvn clean install
+
+```
+
+
+
+* **clean** → Deletes old build files (`target/` folder).
+
+* **install** → Builds project, runs tests, installs artifact to local Maven repo.
+
+**Check:**
+
+* Compiled `.class` files in `target/`.
+
+* JAR/WAR files in `target/`.
+
+**Add dependency example (Gson):**
+```xml
+
+<dependency>
+
+  <groupId>com.google.code.gson</groupId>
+
+  <artifactId>gson</artifactId>
+
+  <version>2.10</version>
+
+</dependency>
+
+``
+---
+
+
+
+## **3. Creating a Maven Java Project in Eclipse**
+
+
+
+1. **Open Eclipse IDE** → File → New → Maven Project
+
+2. **Choose Archetype:** `maven-archetype-quickstart`
+
+3. **Configure metadata:**
+
+
+
+   * GroupId: `com.example`
+
+   * ArtifactId: `my-maven-project`
+
+4. **Project structure generated:**
+
+
+
+   * `src/main/java`, `src/test/java`, `pom.xml`
+
+5. **Build and run:**
+
+
+
+   * Right-click → Run As → Maven Clean / Install / Test / Build
+
+6. **Run Java application:**
+
+
+
+   * Right-click `App.java` → Run As → Java Application
+
+
+
+---
+
+
+
+## **4. Creating a Maven Web Project**
+
+
+
+1. New Maven Project → Archetype: `maven-archetype-webapp`
+
+2. Configure GroupId/ArtifactId
+
+3. Add dependencies in `pom.xml` (Servlet, JSP, JSTL):
+
+
+
+```xml
+
+<dependency>
+
+  <groupId>javax.servlet</groupId>
+
+  <artifactId>javax.servlet-api</artifactId>
+
+  <version>4.0.1</version>
+
+  <scope>provided</scope>
+
+</dependency>
+
+```
+
+
+
+4. Configure Tomcat server in Eclipse
+
+5. Run Maven goals: `clean install test build`
+
+6. Deploy WAR → Run on Server → Check output
+
+
+
+---
+
+
+
+## **5. Configuring Java Version**
+
+
+
+**In `pom.xml`:**
+
+
+
+```xml
+
+<plugin>
+
+  <groupId>org.apache.maven.plugins</groupId>
+
+  <artifactId>maven-compiler-plugin</artifactId>
+
+  <version>3.11.0</version>
+
+  <configuration>
+
+    <source>17</source>
+
+    <target>17</target>
+
+  </configuration>
+
+</plugin>
+
+```
+
+
+
+**Check:**
+
+
+
+```bash
+
+mvn package
+
+jar tf target/myapp.jar
+
+```
+
+
+
+---
+
+
+
+## **6. JUnit Testing**
+
+
+
+**Sample test (`AppTest.java`):**
+
+
+
+```java
+
+public class AppTest {
+
+    @Test
+
+    public void testSum() {
+
+        assertEquals(5, 2 + 3);
+
+    }
+
+}
+
+```
+**Run tests:**
+
+```bash
+
+mvn test
+
+```
+
+
+
+**Check output:**
+
+
+
+* `target/test-classes/` → compiled test classes
+
+* `target/surefire-reports/` → test reports
+
+
+
+---
+
+
+
+## **7. Handling Errors in `pom.xml`**
+
+
+
+* Typo in version numbers → BUILD FAILURE
+
+* Missing repo → BUILD FAILURE
+
+* Fix `pom.xml` and rerun:
+
+
+
+```bash
+
+mvn clean install
+
+```
+
+
+
+---
+
+
+
+## **8. Adding Resource Files**
+
+
+
+* Place in: `src/main/resources/config.properties`
+
+* Access in code:
+
+
+
+```java
+
+InputStream input = getClass().getClassLoader().getResourceAsStream("config.properties");
+
+```
+
+
+
+* Check `target/classes/` → resources included
+
+
+
+---
+
+
+
+## **9. Multi-Module Maven Projects**
+
+
+
+Structure:
+
+
+
+```
+
+parent/
+
+ ├── pom.xml       → packaging: pom, lists modules
+
+ ├── core/
+
+ │    └── pom.xml
+
+ └── web/
+
+      └── pom.xml
+
+```
+
+
+
+* Parent defines `<modules>` and common dependencies
+
+* Submodules build independently into `target/`
+
+
+
+---
+
+
+
+## **10. Executable JAR**
+
+
+
+**pom.xml plugin:**
+
+
+
+```xml
+
+<plugin>
+
+  <groupId>org.apache.maven.plugins</groupId>
+
+  <artifactId>maven-jar-plugin</artifactId>
+
+  <configuration>
+
+    <archive>
+
+      <manifest>
+
+        <mainClass>com.example.Main</mainClass>
+
+      </manifest>
+
+    </archive>
+
+  </configuration>
+
+</plugin>
+
+```
+
+
+
+Build & run:
+
+
+
+```bash
+
+mvn package
+
+java -jar target/myapp.jar
+
+```
+
+
+
+---
+
+
+
+## **11. Building WAR Files**
+
+
+
+* Web project structure: `src/main/webapp/WEB-INF/web.xml`
+
+* Set `<packaging>war</packaging>` in `pom.xml`
+
+* Build:
+
+
+
+```bash
+
+mvn package
+
+```
+
+
+
+* Output: `target/mywebapp.war` → deploy on Tomcat
+
+
+
+---
+
+
+
+## **12. Scenario-Based Questions (Quick Answers)**
+
+
+
+1. **Compiler plugin error** → check `maven-compiler-plugin` version, run:
+
+
+
+```bash
+
+mvn clean compile -X
+
+```
+
+
+
+2. **Dependency not recognized** → verify `.m2` repo, run:
+
+
+
+```bash
+
+mvn dependency:tree
+
+```
+
+
+
+3. **Apply patch**:
+
+
+
+```bash
+
+git apply bugfix.patch
+
+mvn clean install
+
+```
+
+
+
+4. **Rerun failed tests**:
+
+
+
+```bash
+
+mvn -Dtest=TestClassName#testMethod test
+
+```
+
+
+
+5. **Unsupported class version** → check `<source>` & `<target>` in `maven-compiler-plugin`.
+
+
+
+6. **Change WAR → JAR** → set `<packaging>jar</packaging>` and configure `maven-jar-plugin`.
+
+
+
+7. **Change build output dir** → in `pom.xml`:
+
+
+
+```xml
+
+<build>
+
+  <directory>build_output</directory>
+
+</build>
+
+```
+
+
+
+8. **Skip tests:**
+
+
+
+```bash
+
+mvn clean install -DskipTests
+
+```
+
+
+
+9. **Generate site report:**
+
+
+
+```bash
+
+mvn site
+
+```
+
+
+
+10. **Files generated after `mvn clean install`** → `target/` folder: `.class`, `.jar`/`.war`, reports.
+
+
+
+11. **Dependency conflicts** → use `mvn dependency:tree` to check, use `<dependencyManagement>` to enforce versions.
+
+
+
+12. **JUnit test run** → src/test/java, output in `target/test-classes` and `target/surefire-reports`.
+
+
+
+13. **Executable JAR** → `maven-jar-plugin`, set `mainClass`.
+
+
+
+14. **Custom JAR**:
+
+
+
+```bash
+
+mvn install:install-file -Dfile=path/to/lib.jar -DgroupId=com.example -DartifactId=library -Dversion=1.0.0 -Dpackaging=jar
+
+```
+
+
+
+15. **Maven web project (WAR)** → `src/main/webapp`, `WEB-INF`, `<packaging>war</packaging>`.
+
+
+
+16. **Build WAR** → `mvn clean install`, deploy to Tomcat: `target/mywebapp.war`.
+
+
+
+17. **Add JSTL & servlet-api** → servlet-api scope `provided` (server provides it).
+
+
+
+18. **Multi-module project** → parent pom defines modules, dependencies shared, each module builds to `target/`.
+
+
+
+19. **Maven web project config vs traditional WAR** → Maven handles dependencies, build, test, and package automatically; execution via Tomcat remains same.
+
+---
