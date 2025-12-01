@@ -1,0 +1,525 @@
+week 7
+## **1. Define and Run Multiple Interdependent Services**
+
+**Folder & `docker-compose.yml`:**
+
+```yaml
+version: "3.9"
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+```
+
+**Run:**
+
+```bash
+docker compose up -d
+```
+
+* Visit [http://localhost:8080](http://localhost:8080) → Nginx welcome page.
+* `db` container runs in the background.
+
+---
+
+## **2. Add Redis Cache and `depends_on`**
+
+**Updated `docker-compose.yml`:**
+
+```yaml
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      - redis
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+
+  redis:
+    image: redis:alpine
+```
+
+**Restart services:**
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+✅ All three services (`web`, `db`, `redis`) should be running.
+
+---
+
+## **3. Deploy Across Different Machines**
+
+1. Zip your `compose-lab` folder.
+2. Transfer to another machine with Docker Compose.
+3. Run:
+
+```bash
+docker compose up -d
+```
+
+* Output: same services run on the new machine without changes.
+
+---
+
+## **4. Networking and Persistent Storage**
+
+**Update `docker-compose.yml` for network & volume:**
+
+```yaml
+networks:
+  app-net:
+
+volumes:
+  db-data:
+
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    networks:
+      - app-net
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-net
+```
+
+**Run:**
+
+```bash
+docker compose up -d
+```
+
+**Insert data into Postgres using `psql`:**
+
+```bash
+docker exec -it compose-lab-db-1 psql -U demo -d demo_db
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50),
+    email VARCHAR(100)
+);
+
+INSERT INTO users (name, email) VALUES
+('Alice', 'alice@example.com'),
+('Bob', 'bob@example.com');
+
+SELECT * FROM users;
+```
+
+* Stop & remove containers: `docker compose down`
+* Start again: `docker compose up -d` → data persists via `db-data` volume.
+
+---
+
+## **5. Faster Iteration During Development (Flask Example)**
+
+**`app.py`:**
+
+```python
+from flask import Flask
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Hello from Flask + Docker!"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+```
+
+**Dockerfile:**
+
+```dockerfile
+FROM python:3.10-slim
+WORKDIR /app
+COPY app.py /app/
+RUN pip install flask
+CMD ["python", "app.py"]
+```
+
+**`docker-compose.yml` update:**
+
+```yaml
+web:
+  build: .
+  ports:
+    - "5000:5000"
+  depends_on:
+    - db
+```
+
+**Run:**
+
+```bash
+docker compose up --build
+```
+
+* Visit [http://localhost:5000](http://localhost:5000)
+* Modify `app.py` → rebuild with `docker compose up --build` → see changes instantly.
+
+---
+
+## **Scenario-Based Questions & Answers**
+
+1. **Multiple apps in same container?**
+   ❌ Not recommended. One container = one process. Use multiple containers instead.
+
+2. **Expose Flask + Nginx on same host:**
+
+   * Flask: `ports: "5000:5000"`
+   * Nginx: `ports: "80:80"` → each container uses different host ports.
+
+3. **React frontend, Express backend, MongoDB:**
+
+   * Use `docker-compose.yml` → define 3 services.
+   * Use networks to allow service-to-service communication.
+
+4. **Two containers exposing port 8080:**
+   ❌ Conflict → use different host ports (`8081:8080`, `8082:8080`) or separate hosts.
+
+5. **Restart all containers after code update:**
+
+```bash
+docker compose restart
+```
+
+6. **Update only frontend:**
+
+```bash
+docker compose up -d --build web
+```
+
+7. **Tomcat on 8080 “Connection Refused”:**
+
+   * Container not running, or firewall blocking. Check `docker ps` and ports.
+
+8. **Check container using port 3000:**
+
+```bash
+docker ps
+docker port <container_name>
+```
+
+9. **Stop & remove Tomcat container & image:**
+
+```bash
+docker stop <container_name>
+docker rm <container_name>
+docker rmi <image_name>
+```
+
+10. **Share app with teammate:**
+
+    * Build image → push to Docker Hub:
+
+```bash
+docker tag my-app username/my-app:latest
+docker push username/my-app:latest
+```
+
+---
+
+## **✅ Conclusion**
+
+Docker Compose:
+
+* Simplifies multi-container app management
+* Defines, configures, and runs services in a single YAML
+* Ensures consistent environments across machines
+* Supports persistent storage, networking, and faster development iterations
+
+---
+
+---
+
+## **1. Working with Docker CLI Commands (Redis)**
+
+### **Step 1: Pull the Redis Image**
+
+```bash
+docker pull redis
+```
+
+* Downloads the latest Redis image from Docker Hub to your local system.
+
+### **Step 2: Run a Redis Container**
+
+```bash
+docker run --name my-redis -d redis
+```
+
+* `--name my-redis`: names the container.
+* `-d`: runs it in the background.
+
+### **Step 3: Check Running Containers**
+
+```bash
+docker ps
+```
+
+* Lists all active containers.
+
+### **Step 4: Access Redis CLI**
+
+```bash
+docker exec -it my-redis redis-cli
+```
+
+* Opens Redis CLI inside the container.
+* Example commands:
+
+```redis
+SET name "Alice"
+GET name
+```
+
+### **Step 5: Stop the Redis Container**
+
+```bash
+docker stop my-redis
+```
+
+* Stops container without deleting it.
+
+### **Step 6: Restart the Container**
+
+```bash
+docker start my-redis
+```
+
+### **Step 7: Remove the Container**
+
+```bash
+docker rm my-redis
+```
+
+### **Step 8: Remove the Redis Image**
+
+```bash
+docker rmi redis
+```
+
+---
+
+## **2. Working with Dockerfile (Custom Redis Image)**
+
+### **Step 1: Set Up Folder**
+
+**Windows:**
+
+```bash
+mkdir C:\DockerProjects\Redis
+cd C:\DockerProjects\Redis
+```
+
+**Mac/Linux:**
+
+```bash
+mkdir ~/DockerProjects/Redis
+cd ~/DockerProjects/Redis
+```
+
+### **Step 2: Write Dockerfile**
+
+Create a file named `Dockerfile`:
+
+```dockerfile
+FROM redis:latest
+CMD ["redis-server"]
+```
+
+---
+
+### **Docker Commands Step-by-Step**
+
+1. **Build a Docker Image**
+
+```bash
+docker build -t redisnew .
+```
+
+* Builds an image from Dockerfile.
+* `-t redisnew` names it.
+
+2. **Run Container from Custom Image**
+
+```bash
+docker run --name myredisnew -d redisnew
+```
+
+3. **Check Running Containers**
+
+```bash
+docker ps
+```
+
+4. **Stop Container**
+
+```bash
+docker stop myredisnew
+```
+
+5. **Login to Docker Hub**
+
+```bash
+docker login
+```
+
+6. **Show All Containers**
+
+```bash
+docker ps -a
+```
+
+7. **Commit Changes to a New Image**
+
+```bash
+docker commit 0e993d2009a1 budarajumadhurika/redis1
+```
+
+* Saves current container as a new image.
+
+8. **List All Images**
+
+```bash
+docker images
+```
+
+9. **Push Image to Docker Hub**
+
+```bash
+docker push budarajumadhurika/redis1
+```
+
+10. **Remove Container**
+
+```bash
+docker rm 0e993d2009a1
+```
+
+11. **Remove Image**
+
+```bash
+docker rmi budarajumadhurika/redis1
+```
+
+12. **Verify All Containers**
+
+```bash
+docker ps -a
+```
+
+13. **Logout from Docker Hub**
+
+```bash
+docker logout
+```
+
+14. **Pull Image from Docker Hub**
+
+```bash
+docker pull budarajumadhurika/redis1
+```
+
+15. **Run Container from Pulled Image**
+
+```bash
+docker run --name myredis -d budarajumadhurika/redis1
+```
+
+16. **Access Redis CLI**
+
+```bash
+docker exec -it myredis redis-cli
+```
+
+17. **Set and Get Key-Value**
+
+```redis
+SET name "Abcdef"
+GET name
+```
+
+18. **Exit Redis CLI**
+
+```bash
+exit
+```
+
+19. **Check Container Status**
+
+```bash
+docker ps -a
+```
+
+20. **Stop Container**
+
+```bash
+docker stop myredis
+```
+
+21. **Remove Container**
+
+```bash
+docker rm 50a6e4a9c326
+```
+
+22. **List Images**
+
+```bash
+docker images
+```
+
+23. **Remove Image**
+
+```bash
+docker rmi budarajumadhurika/redis1
+```
+
+24. **Optional: Logout**
+
+```bash
+docker logout
+```
+
+---
+
+### **✅ Key Takeaways**
+
+* Docker CLI commands let you **pull, run, stop, remove, and manage containers** easily.
+* `docker build` + Dockerfile allows you to create **custom images**.
+* `docker commit` can snapshot container changes into a new image.
+* Docker Hub enables **sharing images** across machines and teams.
+* Containers are **isolated but lightweight**, and images can be versioned and reused.
+
+---
